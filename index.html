@@ -1,7 +1,7 @@
 <html class="dark" lang="fr">
 <head>
-    <meta charset="UTF-8"></meta>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"></meta>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>Flux en Direct - Fil-IA</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -28,8 +28,8 @@
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"></link>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"></link>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -121,9 +121,9 @@
         </div>
     </footer>
 
-    <!-- Script de récupération natif JSON Blogger -->
+    <!-- Script de récupération via API RSS convertie -->
     <script>
-        const BLOG_JSON_URL = 'https://fil-ia.blogspot.com/feeds/posts/default?alt=json';
+        const FALLBACK_API = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent('https://fil-ia.blogspot.com/feeds/posts/default?alt=rss')}`;
 
         let countdownInterval = null;
         const INTERVAL_DURATION = 120; // 2 minutes
@@ -211,28 +211,16 @@
             errorBanner.classList.add('hidden');
 
             try {
-                const response = await fetch(`${BLOG_JSON_URL}&max-results=5&_=${new Date().getTime()}`);
+                const response = await fetch(`${FALLBACK_API}&_=${new Date().getTime()}`);
                 const data = await response.json();
 
-                if (!data || !data.feed || !data.feed.entry) {
-                    throw new Error("Format de données invalide depuis Blogger.");
+                if (data && data.status === 'ok' && data.items && data.items.length > 0) {
+                    processAndDisplayArticles(data.items.slice(0, 5));
+                } else {
+                    throw new Error("Format de données invalide depuis l'API.");
                 }
-
-                const articles = data.feed.entry.map(entry => {
-                    let linkObj = entry.link.find(l => l.rel === 'alternate');
-                    let content = entry.content ? entry.content.$t : (entry.summary ? entry.summary.$t : '');
-                    return {
-                        title: entry.title.$t,
-                        link: linkObj ? linkObj.href : '#',
-                        pubDate: entry.published.$t,
-                        content: content
-                    };
-                });
-
-                processAndDisplayArticles(articles);
-
             } catch (error) {
-                console.warn("Erreur de récupération directe :", error);
+                console.warn("Erreur de chargement :", error);
                 showErrorState("Impossible de joindre le flux en direct. Nouvelle tentative automatique en cours...");
             }
 
@@ -269,7 +257,7 @@
 
             // Mise à jour du bandeau vedette
             document.getElementById('featured-title').textContent = latest.title;
-            document.getElementById('featured-snippet').textContent = cleanSnippet(latest.content, 220);
+            document.getElementById('featured-snippet').textContent = cleanSnippet(latest.content || latest.description, 220);
             document.getElementById('featured-link').href = latest.link;
             document.getElementById('featured-date').textContent = formatDate(latest.pubDate);
 
@@ -277,8 +265,8 @@
             container.innerHTML = '';
             articles.forEach((art, index) => {
                 const date = formatDate(art.pubDate);
-                const snippet = cleanSnippet(art.content, 130);
-                const thumb = extractThumbnail(art.content);
+                const snippet = cleanSnippet(art.content || art.description, 130);
+                const thumb = extractThumbnail(art.content || art.description) || art.thumbnail;
 
                 const card = document.createElement('div');
                 card.className = `glow-card bg-slate-900/80 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group`;
