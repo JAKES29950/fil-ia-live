@@ -125,7 +125,7 @@
         </div>
     </footer>
 
-    <!-- Script de récupération haute définition -->
+    <!-- Script de récupération respectant les GIFs animés -->
     <script>
         let countdownInterval = null;
         const INTERVAL_DURATION = 120; // 2 minutes
@@ -160,8 +160,13 @@
             div.innerHTML = htmlContent;
             const img = div.querySelector('img');
             if (img && img.src) {
-                // Remplace toute restriction de taille par /s1600/ pour garantir une image ultra nette
-                return img.src.replace(/\/s[0-9]+(\-c)?\//, '/s1600/');
+                let src = img.src;
+                // Si c'est un GIF animé, on conserve l'URL originale pour ne pas bloquer l'animation
+                if (src.toLowerCase().endsWith('.gif') || src.toLowerCase().includes('.gif?')) {
+                    return src;
+                }
+                // Pour les images classiques (JPEG/PNG), on applique la haute définition nette
+                return src.replace(/\/s[0-9]+(\-c)?\//, '/s1600/');
             }
             return null;
         }
@@ -212,7 +217,6 @@
                     const contentObj = entry.content || entry.summary;
                     const content = contentObj && contentObj.$t ? contentObj.$t : "";
 
-                    // Extraction directe de l'image du contenu HTML pour une netteté maximale
                     let thumb = extractThumbnail(content);
 
                     articles.push({
