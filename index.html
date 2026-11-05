@@ -125,7 +125,7 @@
         </div>
     </footer>
 
-    <!-- Script de récupération via JSONP pur (Sans Fetch, Anti-CORS) -->
+    <!-- Script de récupération via JSONP (Anti-CORS et Haute Résolution) -->
     <script>
         let countdownInterval = null;
         const INTERVAL_DURATION = 120; // 2 minutes
@@ -159,7 +159,11 @@
             const div = document.createElement('div');
             div.innerHTML = htmlContent;
             const img = div.querySelector('img');
-            return img ? img.src : null;
+            // Correction pour s'assurer que si une image est extraite du contenu, elle est nette
+            if (img && img.src) {
+                return img.src.replace(/\/s[0-9]+(\-c)?\//, '/s1600/');
+            }
+            return null;
         }
 
         function resetTimer() {
@@ -211,7 +215,8 @@
 
                     let thumb = null;
                     if (entry.media$thumbnail && entry.media$thumbnail.url) {
-                        thumb = entry.media$thumbnail.url.replace(/\/s[0-9]+(\-c)?\//, '/s600/');
+                        // Remplacement de la taille par s1600 pour forcer la haute définition nette
+                        thumb = entry.media$thumbnail.url.replace(/\/s[0-9]+(\-c)?\//, '/s1600/');
                     } else {
                         thumb = extractThumbnail(content);
                     }
