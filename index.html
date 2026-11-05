@@ -125,10 +125,8 @@
         </div>
     </footer>
 
-    <!-- Script de récupération direct via l'API JSON native de Blogger -->
+    <!-- Script de récupération via JSONP (Anti-CORS) -->
     <script>
-        const BLOG_JSON_API = 'https://fil-ia.blogspot.com/feeds/posts/default?alt=json&max-results=5';
-
         let countdownInterval = null;
         const INTERVAL_DURATION = 120; // 2 minutes
         let timeLeft = INTERVAL_DURATION;
@@ -192,21 +190,12 @@
             setTimeout(() => { banner.classList.remove('ring-4', 'ring-blue-400'); }, 4000);
         }
 
-        async function fetchArticles(isManual = false) {
-            const refreshIcon = document.getElementById('refresh-icon');
-            if (refreshIcon) refreshIcon.classList.add('fa-spin');
-            
-            const errorBanner = document.getElementById('error-banner');
-            if (errorBanner) errorBanner.classList.add('hidden');
-
+        // Fonction globale appelée automatiquement par le JSONP de Blogger
+        window.bjsonCallback = function(data) {
             try {
-                const response = await fetch(`${BLOG_JSON_API}&_t=${new Date().getTime()}`);
-                if (!response.ok) throw new Error("Erreur réseau HTTP");
-                
-                const data = await response.json();
                 const entries = data.feed && data.feed.entry ? data.feed.entry : [];
-
                 let articles = [];
+                
                 entries.forEach(entry => {
                     const title = entry.title && entry.title.$t ? entry.title.$t : "";
                     
@@ -239,12 +228,35 @@
                 if (articles.length > 0) {
                     processAndDisplayArticles(articles);
                 } else {
-                    throw new Error("Aucun article trouvé via l'API JSON.");
+                    showErrorState("Aucun article trouvé dans le flux Blogger.");
                 }
             } catch (error) {
-                console.warn("Erreur de chargement :", error);
-                showErrorState("Impossible de joindre le flux en direct. Nouvelle tentative automatique en cours...");
+                console.warn("Erreur de traitement :", error);
+                showErrorState("Erreur lors de l'analyse des articles.");
             }
+        };
+
+        function fetchArticles(isManual = false) {
+            const refreshIcon = document.getElementById('refresh-icon');
+            if (refreshIcon) refreshIcon.classList.add('fa-spin');
+            
+            const errorBanner = document.getElementById('error-banner');
+            if (errorBanner) errorBanner.classList.add('hidden');
+
+            // Suppression de l'ancien script s'il existe pour forcer le rechargement
+            const oldScript = document.getElementById('blogger-jsonp');
+            if (oldScript) oldScript.remove();
+
+            // Création d'une balise script dynamique ( contourne complètement les restrictions CORS )
+            const script = document.createElement('script');
+            script.id = 'blogger-jsonp';
+            script.src = `https://fil-ia.blogspot.com/feeds/posts/default?alt=json-in-script&max-results=5&callback=bjsonCallback&_t=${new Date().getTime()}`;
+            
+            script.onerror = function() {
+                showErrorState("Impossible de joindre le flux en direct.");
+            };
+
+            document.body.appendChild(script);
 
             if (isManual) {
                 resetTimer();
