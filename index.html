@@ -125,10 +125,10 @@
         </div>
     </footer>
 
-    <!-- Script de récupération direct via l'API JSON Blogger -->
+    <!-- Script de récupération via Proxy XML natif -->
     <script>
-        // API JSON officielle de Blogger (plus besoin de proxy externe)
-        const BLOG_JSON_API = 'https://fil-ia.blogspot.com/feeds/posts/default?alt=json&max-results=5';
+        const BLOG_RSS = 'https://fil-ia.blogspot.com/feeds/posts/default?alt=rss';
+        const PROXY_API = `https://api.allorigins.win/get?url=${encodeURIComponent(BLOG_RSS)}`;
 
         let countdownInterval = null;
         const INTERVAL_DURATION = 120; // 2 minutes
@@ -201,48 +201,37 @@
             if (errorBanner) errorBanner.classList.add('hidden');
 
             try {
-                const response = await fetch(`${BLOG_JSON_API}&_t=${new Date().getTime()}`);
+                const response = await fetch(`${PROXY_API}&_t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error("Erreur réseau HTTP");
                 
                 const data = await response.json();
-                const entries = data.feed && data.feed.entry ? data.feed.entry : [];
+                if (!data.contents) throw new Error("Contenu vide depuis le proxy.");
+
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+                const entries = xmlDoc.querySelectorAll("entry");
 
                 let articles = [];
                 entries.forEach(entry => {
-                    const title = entry.title && entry.title.$t ? entry.title.$t : "";
-                    
-                    let link = "#";
-                    if (entry.link) {
-                        const altLink = entry.link.find(l => l.rel === 'alternate');
-                        if (altLink) link = altLink.href;
-                    }
-
-                    const pubDate = entry.published && entry.published.$t ? entry.published.$t : "";
-                    const contentObj = entry.content || entry.summary;
-                    const content = contentObj && contentObj.$t ? contentObj.$t : "";
-
-                    // Extraction de l'image miniature depuis l'API Blogger si présente
-                    let thumb = null;
-                    if (entry.media$thumbnail && entry.media$thumbnail.url) {
-                        // Remplacement pour avoir une meilleure résolution d'image miniature
-                        thumb = entry.media$thumbnail.url.replace(/\/s[0-9]+(\-c)?\//, '/s600/');
-                    } else {
-                        thumb = extractThumbnail(content);
-                    }
+                    const title = entry.querySelector("title")?.textContent || "";
+                    const linkObj = entry.querySelector("link[rel='alternate']");
+                    const link = linkObj ? linkObj.getAttribute("href") : "#";
+                    const pubDate = entry.querySelector("published")?.textContent || entry.querySelector("updated")?.textContent || "";
+                    const content = entry.querySelector("content")?.textContent || entry.querySelector("summary")?.textContent || "";
 
                     articles.push({
                         title,
                         link,
                         pubDate,
                         content,
-                        thumbnail: thumb
+                        description: content
                     });
                 });
 
                 if (articles.length > 0) {
-                    processAndDisplayArticles(articles);
+                    processAndDisplayArticles(articles.slice(0, 5));
                 } else {
-                    throw new Error("Aucun article trouvé via l'API JSON.");
+                    throw new Error("Aucun article trouvé dans le flux XML.");
                 }
             } catch (error) {
                 console.warn("Erreur de chargement :", error);
@@ -292,7 +281,7 @@
             articles.forEach((art, index) => {
                 const date = formatDate(art.pubDate);
                 const snippet = cleanSnippet(art.content, 130);
-                const thumb = art.thumbnail;
+                const thumb = extractThumbnail(art.content);
 
                 const card = document.createElement('div');
                 card.className = `glow-card bg-slate-900/80 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 relative overflow-hidden group`;
