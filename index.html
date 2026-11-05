@@ -125,7 +125,7 @@
         </div>
     </footer>
 
-    <!-- Script de récupération via JSONP (Anti-CORS) -->
+    <!-- Script de récupération via JSONP pur (Sans Fetch, Anti-CORS) -->
     <script>
         let countdownInterval = null;
         const INTERVAL_DURATION = 120; // 2 minutes
@@ -190,7 +190,7 @@
             setTimeout(() => { banner.classList.remove('ring-4', 'ring-blue-400'); }, 4000);
         }
 
-        // Fonction globale appelée automatiquement par le JSONP de Blogger
+        // Callback globale JSONP
         window.bjsonCallback = function(data) {
             try {
                 const entries = data.feed && data.feed.entry ? data.feed.entry : [];
@@ -243,11 +243,9 @@
             const errorBanner = document.getElementById('error-banner');
             if (errorBanner) errorBanner.classList.add('hidden');
 
-            // Suppression de l'ancien script s'il existe pour forcer le rechargement
             const oldScript = document.getElementById('blogger-jsonp');
             if (oldScript) oldScript.remove();
 
-            // Création d'une balise script dynamique ( contourne complètement les restrictions CORS )
             const script = document.createElement('script');
             script.id = 'blogger-jsonp';
             script.src = `https://fil-ia.blogspot.com/feeds/posts/default?alt=json-in-script&max-results=5&callback=bjsonCallback&_t=${new Date().getTime()}`;
