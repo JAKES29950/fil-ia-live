@@ -1,138 +1,12 @@
-<html class="dark" lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Flux en Direct - Fil-IA</title>
-    <!-- Favicon Robot multi-formats -->
-<link rel="icon" type="image/svg+xml" href="https://api.iconify.design/fluent-emoji-flat:robot.svg">
-<link rel="icon" type="image/png" sizes="32x32" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
-<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+<!-- Script de récupération via API RSS convertie -->
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkbg: '#0b0f19',
-                        cardbg: '#111827',
-                        accent: '#3b82f6',
-                        accentglow: '#60a5fa',
-                        neonpurple: '#8b5cf6'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
-            overflow-x: hidden;
-        }
-        .glow-effect {
-            box-shadow: 0 0 25px rgba(59, 130, 246, 0.15);
-        }
-        .glow-card:hover {
-            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
-            border-color: rgba(59, 130, 246, 0.5);
-        }
-    </style>
-</head>
-<body class="min-h-screen flex flex-col justify-between bg-gradient-to-br from-darkbg via-[#111827] to-[#0f172a] text-slate-100">
-
-    <!-- En-tête -->
-    <header class="w-full border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30 animate-pulse-slow">
-                    <i class="fa-solid fa-brain text-white text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
-                        Fil-IA Live Feed
-                    </h1>
-                    <p class="text-xs text-slate-400">Diffusion continue des 5 derniers articles</p>
-                </div>
-            </div>
-
-            <div class="flex items-center space-x-4">
-                <div class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700 text-xs text-slate-300">
-                    <span class="relative flex h-2.5 w-2.5">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                    <span id="sync-status">Synchro active (<span id="countdown">02:00</span>)</span>
-                </div>
-
-                <button class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer" onclick="manualRefresh()" title="Actualiser maintenant">
-                    <i class="fa-solid fa-rotate" id="refresh-icon"></i>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Contenu Principal -->
-    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 flex-grow flex flex-col justify-center">
-        
-        <div class="hidden mb-6 p-4 rounded-xl bg-red-950/40 border border-red-800/50 text-red-300 text-sm flex items-center justify-between" id="error-banner">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-                <span id="error-message">Impossible de joindre le flux en direct. Nouvelle tentative automatique en cours...</span>
-            </div>
-            <button class="text-xs bg-red-900/60 hover:bg-red-900 px-3 py-1.5 rounded-lg border border-red-700 transition cursor-pointer" onclick="fetchArticles(true)">Réessayer</button>
-        </div>
-
-        <div class="flex flex-col items-center justify-center py-24 space-y-4" id="loading-state">
-            <div class="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-            <p class="text-slate-400 text-sm font-medium animate-pulse">Connexion au flux de Fil-IA...</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden" id="articles-container"></div>
-
-        <div class="mt-8 hidden bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-slate-900/60 border border-blue-900/40 rounded-2xl p-6 glow-effect transition-all" id="featured-article-banner">
-            <div class="flex items-center justify-between mb-3">
-                <span class="inline-flex items-center space-x-1.5 text-xs font-semibold uppercase tracking-wider bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full border border-blue-500/30">
-                    <i class="fa-solid fa-bolt text-xs"></i> Dernier Article Publié
-                </span>
-                <span class="text-xs text-slate-400" id="featured-date">--</span>
-            </div>
-            <h2 class="text-xl sm:text-2xl font-bold text-white mb-2 hover:text-blue-400 transition" id="featured-title">--</h2>
-            <p class="text-slate-300 text-sm sm:text-base line-clamp-2 mb-4" id="featured-snippet">--</p>
-            <a class="inline-flex items-center space-x-2 text-sm font-semibold text-blue-400 hover:text-blue-300 transition group" href="#" id="featured-link" target="_blank">
-                <span>Lire l'article complet</span>
-                <i class="fa-solid fa-arrow-right transform group-hover:translate-x-1 transition"></i>
-            </a>
-        </div>
-    </main>
-
-    <!-- Pied de page -->
-    <footer class="w-full border-t border-slate-800 bg-slate-900/40 py-4 px-6 text-center text-xs text-slate-500">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p>Fil-IA Dashboard • Actualisation automatique connectée à <a class="text-slate-400 hover:underline" href="https://fil-ia.blogspot.com" target="_blank">fil-ia.blogspot.com</a></p>
-            <p id="last-update-time">Dernière mise à jour : --:--:--</p>
-        </div>
-    </footer>
-
-    <!-- Script de récupération via API RSS convertie -->
-    <script>
-        const FALLBACK_API = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent('https://fil-ia.blogspot.com/feeds/posts/default?alt=rss')}`;
+        const BLOG_RSS = 'https://fil-IA.blogspot.com/feeds/posts/default?alt=rss';
+        const FALLBACK_API = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(BLOG_RSS)}`;
 
         let countdownInterval = null;
         const INTERVAL_DURATION = 120; // 2 minutes
         let timeLeft = INTERVAL_DURATION;
-        let previousLatestTitle = "";
+        let previousLatestTitle = null; // Modifié pour gérer correctement l'initialisation
 
         function formatDate(dateString) {
             if (!dateString) return '';
@@ -209,13 +83,18 @@
 
         async function fetchArticles(isManual = false) {
             const refreshIcon = document.getElementById('refresh-icon');
-            refreshIcon.classList.add('fa-spin');
+            if (refreshIcon) refreshIcon.classList.add('fa-spin');
             
             const errorBanner = document.getElementById('error-banner');
-            errorBanner.classList.add('hidden');
+            if (errorBanner) errorBanner.classList.add('hidden');
 
             try {
-                const response = await fetch(`${FALLBACK_API}&_=${new Date().getTime()}`);
+                // Ajout d'un paramètre aléatoire puissant pour contourner le cache de l'API rss2json
+                const cacheBuster = `&api_key=&count=5&_t=${new Date().getTime()}`;
+                const response = await fetch(FALLBACK_API + cacheBuster);
+                
+                if (!response.ok) throw new Error("Erreur réseau HTTP");
+                
                 const data = await response.json();
 
                 if (data && data.status === 'ok' && data.items && data.items.length > 0) {
@@ -242,19 +121,22 @@
             const container = document.getElementById('articles-container');
             const featuredBanner = document.getElementById('featured-article-banner');
             
-            loadingState.classList.add('hidden');
-            container.classList.remove('hidden');
-            featuredBanner.classList.remove('hidden');
+            if (loadingState) loadingState.classList.add('hidden');
+            if (container) container.classList.remove('hidden');
+            if (featuredBanner) featuredBanner.classList.remove('hidden');
 
             const now = new Date();
-            document.getElementById('last-update-time').textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
+            const updateTimeEl = document.getElementById('last-update-time');
+            if (updateTimeEl) updateTimeEl.textContent = `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
             
             const refreshIcon = document.getElementById('refresh-icon');
-            refreshIcon.classList.remove('fa-spin');
+            if (refreshIcon) refreshIcon.classList.remove('fa-spin');
 
             const latest = articles[0];
 
-            if (previousLatestTitle !== "" && previousLatestTitle !== latest.title) {
+            // Correction de la logique de détection : 
+            // Si previousLatestTitle n'est plus null et est différent du nouveau titre -> Alerte !
+            if (previousLatestTitle !== null && previousLatestTitle !== latest.title) {
                 triggerNewArticleAlert();
             }
             previousLatestTitle = latest.title;
@@ -307,13 +189,14 @@
 
         function showErrorState(msg) {
             const loadingState = document.getElementById('loading-state');
-            loadingState.classList.add('hidden');
+            if (loadingState) loadingState.classList.add('hidden');
             const errorBanner = document.getElementById('error-banner');
-            errorBanner.classList.remove('hidden');
-            document.getElementById('error-message').textContent = msg;
+            if (errorBanner) errorBanner.classList.remove('hidden');
+            const errMsg = document.getElementById('error-message');
+            if (errMsg) errMsg.textContent = msg;
             
             const refreshIcon = document.getElementById('refresh-icon');
-            refreshIcon.classList.remove('fa-spin');
+            if (refreshIcon) refreshIcon.classList.remove('fa-spin');
         }
 
         window.onload = function() {
@@ -321,5 +204,3 @@
             resetTimer();
         };
     </script>
-</body>
-</html>
