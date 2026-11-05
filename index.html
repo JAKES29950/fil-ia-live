@@ -125,10 +125,10 @@
         </div>
     </footer>
 
-    <!-- Script de récupération via Proxy XML natif -->
+    <!-- Script de récupération via CodeTabs CORS Proxy -->
     <script>
         const BLOG_RSS = 'https://fil-ia.blogspot.com/feeds/posts/default?alt=rss';
-        const PROXY_API = `https://api.allorigins.win/get?url=${encodeURIComponent(BLOG_RSS)}`;
+        const PROXY_API = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(BLOG_RSS)}`;
 
         let countdownInterval = null;
         const INTERVAL_DURATION = 120; // 2 minutes
@@ -204,11 +204,9 @@
                 const response = await fetch(`${PROXY_API}&_t=${new Date().getTime()}`);
                 if (!response.ok) throw new Error("Erreur réseau HTTP");
                 
-                const data = await response.json();
-                if (!data.contents) throw new Error("Contenu vide depuis le proxy.");
-
+                const xmlText = await response.text();
                 const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
                 const entries = xmlDoc.querySelectorAll("entry");
 
                 let articles = [];
