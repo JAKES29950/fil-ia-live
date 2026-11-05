@@ -125,7 +125,7 @@
         </div>
     </footer>
 
-    <!-- Script de récupération via JSONP (Anti-CORS et Haute Résolution) -->
+    <!-- Script de récupération haute définition -->
     <script>
         let countdownInterval = null;
         const INTERVAL_DURATION = 120; // 2 minutes
@@ -159,8 +159,8 @@
             const div = document.createElement('div');
             div.innerHTML = htmlContent;
             const img = div.querySelector('img');
-            // Correction pour s'assurer que si une image est extraite du contenu, elle est nette
             if (img && img.src) {
+                // Remplace toute restriction de taille par /s1600/ pour garantir une image ultra nette
                 return img.src.replace(/\/s[0-9]+(\-c)?\//, '/s1600/');
             }
             return null;
@@ -194,7 +194,6 @@
             setTimeout(() => { banner.classList.remove('ring-4', 'ring-blue-400'); }, 4000);
         }
 
-        // Callback globale JSONP
         window.bjsonCallback = function(data) {
             try {
                 const entries = data.feed && data.feed.entry ? data.feed.entry : [];
@@ -213,13 +212,8 @@
                     const contentObj = entry.content || entry.summary;
                     const content = contentObj && contentObj.$t ? contentObj.$t : "";
 
-                    let thumb = null;
-                    if (entry.media$thumbnail && entry.media$thumbnail.url) {
-                        // Remplacement de la taille par s1600 pour forcer la haute définition nette
-                        thumb = entry.media$thumbnail.url.replace(/\/s[0-9]+(\-c)?\//, '/s1600/');
-                    } else {
-                        thumb = extractThumbnail(content);
-                    }
+                    // Extraction directe de l'image du contenu HTML pour une netteté maximale
+                    let thumb = extractThumbnail(content);
 
                     articles.push({
                         title,
