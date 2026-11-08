@@ -379,7 +379,8 @@
     <!-- Script de l'application -->
     <script>
         const BLOG_URL = "https://fil-ia.blogspot.com";
-        const BLOG_JSON_URL = 'https://fil-ia.blogspot.com/feeds/posts/default?alt=json';
+        const BLOG_RSS_URL = 'https://fil-ia.blogspot.com/feeds/posts/default?alt=rss';
+        const API_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(BLOG_RSS_URL)}`;
 
         let countdownInterval = null;
         const INTERVAL_DURATION = 120;
@@ -633,21 +634,13 @@
                 if (gridEl) gridEl.classList.add('hidden');
 
                 try {
-                    const targetUrl = `${BLOG_JSON_URL}&max-results=20&_=${Date.now()}`;
-                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                    
-                    const response = await fetch(proxyUrl);
-                    const wrapper = await response.json();
-                    const data = JSON.parse(wrapper.contents);
+                    const response = await fetch(API_URL);
+                    const data = await response.json();
 
-                    if (data && data.feed && data.feed.entry) {
-                        let extracted = data.feed.entry.map((entry, index) => {
-                            let linkObj = entry.link.find(l => l.rel === 'alternate');
-                            let content = entry.content ? entry.content.$t : (entry.summary ? entry.summary.$t : '');
-                            let pubDate = entry.published ? entry.published.$t : new Date().toISOString();
-                            
+                    if (data && data.status === 'ok' && data.items) {
+                        let extracted = data.items.map((item, index) => {
                             let div = document.createElement('div');
-                            div.innerHTML = content;
+                            div.innerHTML = item.content || item.description || '';
                             let img = div.querySelector('img');
                             let imgUrl = img ? img.src : FALLBACK_ARTICLES[index % FALLBACK_ARTICLES.length].imageUrl;
                             
@@ -657,14 +650,14 @@
 
                             return {
                                 id: `live-${index}`,
-                                title: entry.title.$t,
-                                date: new Date(pubDate).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' }),
-                                timestamp: new Date(pubDate).getTime(),
-                                category: (entry.category && entry.category[0]) ? entry.category[0].term : "Actualité IA",
-                                sourceUrl: linkObj ? linkObj.href : BLOG_URL,
+                                title: item.title,
+                                date: new Date(item.pubDate).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: 'numeric' }),
+                                timestamp: new Date(item.pubDate).getTime(),
+                                category: (item.categories && item.categories[0]) ? item.categories[0] : "Actualité IA",
+                                sourceUrl: item.link,
                                 imageUrl: imgUrl,
                                 summary: textSnippet || "Découvrez cet article passionnant sur l'intelligence artificielle...",
-                                content: textSnippet + "\n\n[Contenu intégral extrait et enrichi en temps réel depuis la publication officielle sur Fil-IA Blog. L'intelligence artificielle analyse en continu l'ensemble des flux d'actualités technologiques pour vous offrir une synthèse de premier plan.]"
+                                content: (div.textContent || item.description) + "\n\n[Contenu intégral extrait et enrichi en temps réel depuis la publication officielle sur Fil-IA Blog. L'intelligence artificielle analyse en continu l'ensemble des flux d'actualités technologiques pour vous offrir une synthèse de premier plan.]"
                             };
                         });
 
