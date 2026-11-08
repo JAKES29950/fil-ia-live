@@ -633,8 +633,12 @@
                 if (gridEl) gridEl.classList.add('hidden');
 
                 try {
-                    const response = await fetch(`${BLOG_JSON_URL}&max-results=20&_=${Date.now()}`);
-                    const data = await response.json();
+                    const targetUrl = `${BLOG_JSON_URL}&max-results=20&_=${Date.now()}`;
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                    
+                    const response = await fetch(proxyUrl);
+                    const wrapper = await response.json();
+                    const data = JSON.parse(wrapper.contents);
 
                     if (data && data.feed && data.feed.entry) {
                         let extracted = data.feed.entry.map((entry, index) => {
